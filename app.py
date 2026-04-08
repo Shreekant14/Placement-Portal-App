@@ -6,6 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///placement.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.secret_key = "supersecretkey"
 
 db = SQLAlchemy(app)
 
@@ -131,21 +132,88 @@ class Notification(db.Model):
 
     user = db.relationship("User", back_populates="notifications")
 
-@app.route('/')
-def index( ):
-    return render_template('index.html')
 
 # -----------------
 # MAIN APPLICATION
 # -----------------
-@app.route('/login')
+
+
+@app.route('/')
+def index( ):
+    return render_template('index.html')
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    if request.method == 'POST':
+        email = request.form["email"]
+        password = request.form["password"]
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            print('186 line')
+            return "User not found"
+
+        if not check_password_hash(user.password, password):
+            return "Incorrect password"
+
+        # Store session
+        session["user_id"] = user.id
+        session["role"] = user.role
+
+
+        # Role-based redirect
+        if user.role == "admin":
+            return "admin_dashboard"
+        
+        elif user.role == "company":
+            if not user.is_approved:
+                return "Wait for admin approval"
+            return "Company Dashboard"
+        else:
+            return "Student Dashboard"
+
     return render_template('login.html')
 
+@app.route("/company dashboard")
+def company_dashboard():
+    return "this is company dashborad"
+
+@app.route("/student dashboard")
+def student_dashboard():
+    return "this is student dashborad"
+@app.route("/admin dashboard")
+def admin_dashboard():
+    return "this is admin dashborad"
 
 
-@app.route('/register')
+@app.route('/register', methods=['GET', 'POST'])
 def register():
+    if request.method == 'POST':
+        
+        name = request.form["name"]
+        email = request.form["email"]
+        password = request.form["password"]
+        role = request.form["role"]
+
+        if role=="admin":
+            return "Admin can not register"
+        if User.query.filter_by(email=email).first():
+            return "Email already registered"
+        
+        user = User(
+            name=name,
+            email=email,
+            password=generate_password_hash(password),
+            role=role,
+            is_approved=False if role == "company" else True
+        )
+        db.session.add(user)
+        db.session.commit()
+
+        print(name, email, password)
+
+        return "Registered Successfully"
+
     return render_template('register.html')
 
 if __name__=="__main__":
