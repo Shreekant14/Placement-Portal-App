@@ -163,28 +163,80 @@ def login():
 
         # Role-based redirect
         if user.role == "admin":
-            return "admin_dashboard"
-        
+            return redirect(url_for('admin_dashboard'))
+
         elif user.role == "company":
             if not user.is_approved:
                 return "Wait for admin approval"
-            return "Company Dashboard"
+            return redirect(url_for('company_dashboard'))
+
         else:
-            return "Student Dashboard"
+            return redirect(url_for('student_dashboard'))
 
     return render_template('login.html')
 
-@app.route("/company dashboard")
+# -----------------
+# DASHBOARDS
+# -----------------
+
+@app.route("/company_dashboard")
 def company_dashboard():
-    return "this is company dashborad"
+    if "user_id" not in session:
+        return redirect('/login')
 
-@app.route("/student dashboard")
+    if session["role"] != "company":
+        return "Access Denied"
+
+    return render_template("company_dashboard.html")
+
+
+@app.route("/student_dashboard")
 def student_dashboard():
-    return "this is student dashborad"
-@app.route("/admin dashboard")
-def admin_dashboard():
-    return "this is admin dashborad"
+    if "user_id" not in session:
+        return redirect('/login')
 
+    if session["role"] != "student":
+        return "Access Denied"
+
+    return render_template("student_dashboard.html")
+
+
+@app.route("/admin_dashboard")
+def admin_dashboard():
+    if "user_id" not in session:
+        return redirect('/login')
+
+    if session["role"] != "admin":
+        return "Access Denied"
+
+    companies = User.query.filter_by(role="company").all()
+
+    return render_template("admin_dashboard.html", companies=companies)
+
+
+@app.route("/approve_company/<int:id>")
+def approve_company(id):
+    if "user_id" not in session:
+        return redirect('/login')
+
+    if session["role"] != "admin":
+        return "Access Denied"
+
+    company = User.query.get(id)
+
+    if not company:
+        return "Company not found"
+
+    company.is_approved = True
+    db.session.commit()
+
+    return redirect(url_for('admin_dashboard'))
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
