@@ -19,42 +19,192 @@
             padding: 20px;
             margin: 15px 0;
         }
+
+        .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        }
+
+        .card {
+            border-radius: 15px;
+            transition: 0.3s;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+        .card h5 {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 
 <body>
 
+<nav class="navbar navbar-dark bg-dark px-3 d-flex justify-content-between">
+
+    <div>
+        <span class="navbar-brand">Placement Portal</span>
+    </div>
+
+    <div>
+        <a href="/" class="btn btn-outline-light btn-sm me-2">Home</a>
+
+        {% if session.get("role") == "student" %}
+            <a href="/student_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% elif session.get("role") == "company" %}
+            <a href="/company_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% elif session.get("role") == "admin" %}
+            <a href="/admin_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% endif %}
+
+        <a href="/notifications" class="btn btn-outline-warning btn-sm me-2">🔔</a>
+        <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+    </div>
+
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, msg in messages %}
+      <div class="alert alert-{{ category }} mt-2 text-center">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
 <div class="container mt-4">
     <h2 class="text-center mb-4">Admin Dashboard</h2>
 
-    <div class="card-box">
-        <h5>Total Companies</h5>
-        <p>{{ companies|length }}</p>
+<div class="row text-center mt-4">
+
+    <!-- STUDENTS -->
+    <div class="col-md-4">
+        <div class="card shadow p-3 rounded">
+            <h5>Students</h5>
+            <a href="/admin_dashboard?view=student" class="btn btn-info mt-2">View</a>
+        </div>
     </div>
 
+    <!-- COMPANIES -->
+    <div class="col-md-4">
+        <div class="card shadow p-3 rounded">
+            <h5>Companies</h5>
+            <a href="/admin_dashboard?view=company" class="btn btn-secondary mt-2">View</a>
+        </div>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="col-md-4">
+        <div class="card shadow p-3 rounded">
+            <h5>Applications</h5>
+            <a href="/admin_dashboard?view=applications" class="btn btn-primary mt-2">View</a>
+        </div>
+    </div>
+
+</div>
+
     <div class="card-box">
+        {% if view == "company" %}
+            <h5>Total Companies</h5>
+            <p>{{ companies|length }}</p>
+
+        {% elif view == "student" %}
+            <h5>Total Students</h5>
+            <p>{{ students|length }}</p>
+
+        {% else %}
+            <h5>Total Applications</h5>
+            <p>{{ applications|length }}</p>
+
+        {% endif %}
+    </div>
+
+<div class="card-box">
+
+    {% if view == "company" %}
         <h5>Company Approval List</h5>
 
         {% for c in companies %}
-    <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="card-box">
 
-        <span>
-            {{ c.name }} 
-            ({{ "Approved" if c.is_approved else "Pending" }})
-        </span>
+                <strong>Name:</strong> {{ c.name }} <br>
+                <strong>Email:</strong> {{ c.email }} <br>
 
-        {% if not c.is_approved %}
-            <a href="/approve_company/{{ c.id }}" class="btn btn-success btn-sm">
-                Approve
-            </a>
-        {% endif %}
+                {% if c.company_profile %}
+                    <strong>Industry:</strong> {{ c.company_profile.industry or "N/A" }} <br>
+                    <strong>Website:</strong>
+                    {% if c.company_profile.website %}
+                        <a href="{{ c.company_profile.website }}" target="_blank">Visit</a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                {% endif %}
 
-    </div>
-{% endfor %}
-    </div>
+                <strong>Status:</strong> 
+                {% if c.is_approved %}
+                    <span class="badge bg-success">Approved</span>
+                {% else %}
+                    <span class="badge bg-warning">Pending</span>
+                {% endif %}
 
-    <a href="/logout" class="btn btn-danger mt-3">Logout</a>
+                {% if not c.is_approved %}
+                    <form action="/approve_company/{{ c.id }}" method="POST" class="mt-2">
+                        <button class="btn btn-success btn-sm">Approve</button>
+                    </form>
+                {% endif %}
+
+            </div>
+        {% endfor %}
+
+    {% elif view == "student" %}
+        <h5>Student List</h5>
+
+        {% for s in students %}
+            <div class="card-box">
+
+                <strong>Name:</strong> {{ s.name }} <br>
+                <strong>Email:</strong> {{ s.email }} <br>
+
+                {% if s.student_profile %}
+                    <strong>Department:</strong> {{ s.student_profile.department or "N/A" }} <br>
+                    <strong>CGPA:</strong> {{ s.student_profile.cgpa or "N/A" }} <br>
+
+                    <strong>Resume:</strong>
+                    {% if s.student_profile.resume %}
+                        <a href="{{ s.student_profile.resume }}" target="_blank">View</a>
+                    {% else %}
+                        N/A
+                    {% endif %}
+                {% else %}
+                    <p>No profile available</p>
+                {% endif %}
+
+            </div>
+        {% endfor %}
+
+    {% else %}
+        <h5>Application List</h5>
+
+        {% for app in applications %}
+            <div class="mb-3 p-3 bg-light text-dark rounded">
+                <strong>Student:</strong> {{ app.student.user.name }} <br>
+                <strong>Job:</strong> {{ app.job.title }} <br>
+                <strong>Company:</strong> {{ app.job.company.user.name }} <br>
+                <strong>Status:</strong> {{ app.status }}
+            </div>
+        {% endfor %}
+
+    {% endif %}
+
 </div>
+</div>
+<footer class="bg-dark text-white text-center py-2 mt-4">
+    <small>© 2026 Placement Portal | Developed by Shreekant</small>
+</footer>
 
 </body>
 </html>

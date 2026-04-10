@@ -19,21 +19,146 @@
             border-radius: 10px;
             margin-top: 20px;
         }
+
+        .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        }
     </style>
 </head>
 
 <body>
 
-<div class="container text-center mt-5">
-    <h2>Company Dashboard</h2>
+<nav class="navbar navbar-dark bg-dark px-3 d-flex justify-content-between">
 
-    <div class="box">
+    <div>
+        <span class="navbar-brand">Placement Portal</span>
+    </div>
+
+    <div>
+        <a href="/" class="btn btn-outline-light btn-sm me-2">Home</a>
+
+        {% if session.get("role") == "student" %}
+            <a href="/student_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% elif session.get("role") == "company" %}
+            <a href="/company_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% elif session.get("role") == "admin" %}
+            <a href="/admin_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% endif %}
+
+        <a href="/company_dashboard" class="btn btn-outline-light btn-sm me-2">Profile</a>
+        <a href="/notifications" class="btn btn-outline-warning btn-sm me-2">🔔</a>
+        <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+    </div>
+
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, msg in messages %}
+      <div class="alert alert-{{ category }} mt-2 text-center">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="container mt-5">
+    <h2 class="text-center">Company Dashboard</h2>
+
+    <div class="box text-center">
         <p>Welcome, Company!</p>
         <p>You can create jobs and manage applicants.</p>
     </div>
 
-    <a href="/logout" class="btn btn-danger mt-3">Logout</a>
+<h4 class="mt-4">Company Profile</h4>
+
+<form action="/update_company_profile" method="POST">
+    <input type="text" name="industry" placeholder="Industry" class="form-control mb-2">
+
+    <input type="text" name="website" placeholder="Website" class="form-control mb-2">
+
+    <button class="btn btn-success">Save Profile</button>
+</form>
+
+
+<h4 class="mt-4">Create Job</h4>
+
+<form action="/create_job" method="POST">
+    <input type="text" name="title" placeholder="Job Title" class="form-control mb-2" required>
+
+    <input type="text" name="skills" placeholder="Required Skills" class="form-control mb-2">
+
+    <input type="text" name="salary" placeholder="Salary" class="form-control mb-2">
+
+    <button class="btn btn-success">Create Job</button>
+</form>
+
+<h4 class="mt-4">Your Jobs</h4>
+
+<div class="box">
+
+    {% if jobs %}
+        {% for job in jobs %}
+            <div class="mb-2">
+                <strong>{{ job.title }}</strong> - {{ job.salary }}
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>No jobs created yet</p>
+    {% endif %}
+
 </div>
+<!-- APPLICANTS -->
+<h4 class="mt-4">Applicants</h4>
+
+<div class="box">
+
+{% if applications %}
+    {% for app in applications %}
+        <div class="mb-3 p-3 bg-light text-dark rounded">
+
+            <strong>{{ app.student.user.name }}</strong><br>
+            Job: {{ app.job.title }}<br>
+
+            <strong>Status:</strong> 
+            <span class="badge 
+                {% if app.status == 'Selected' %}bg-success
+                {% elif app.status == 'Rejected' %}bg-danger
+                {% elif app.status == 'Shortlisted' %}bg-warning
+                {% else %}bg-secondary
+                {% endif %}
+            ">
+                {{ app.status }}
+            </span>
+
+            <div class="mt-2">
+                <form action="/update_status/{{ app.id }}/Shortlisted" method="POST" style="display:inline;">
+                    <button class="btn btn-warning btn-sm">Shortlist</button>
+                </form>
+
+                <form action="/update_status/{{ app.id }}/Selected" method="POST" style="display:inline;">
+                    <button class="btn btn-success btn-sm">Select</button>
+                </form>
+
+                <form action="/update_status/{{ app.id }}/Rejected" method="POST" style="display:inline;">
+                    <button class="btn btn-danger btn-sm">Reject</button>
+                </form>
+            </div>
+
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No applicants yet</p>
+{% endif %}
+
+</div>
+
+</div>
+<footer class="bg-dark text-white text-center py-2 mt-4">
+    <small>© 2026 Placement Portal | Developed by Shreekant</small>
+</footer>
 
 </body>
 </html>

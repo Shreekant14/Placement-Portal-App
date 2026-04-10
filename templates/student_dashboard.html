@@ -19,21 +19,122 @@
             border-radius: 10px;
             margin-top: 20px;
         }
+
+        .navbar {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        }
     </style>
 </head>
 
 <body>
 
-<div class="container text-center mt-5">
-    <h2>Student Dashboard</h2>
+<nav class="navbar navbar-dark bg-dark px-3 d-flex justify-content-between">
 
-    <div class="box">
+    <div>
+        <span class="navbar-brand">Placement Portal</span>
+    </div>
+
+    <div>
+        <a href="/" class="btn btn-outline-light btn-sm me-2">Home</a>
+
+        {% if session.get("role") == "student" %}
+            <a href="/student_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% elif session.get("role") == "company" %}
+            <a href="/company_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% elif session.get("role") == "admin" %}
+            <a href="/admin_dashboard" class="btn btn-outline-light btn-sm me-2">Dashboard</a>
+        {% endif %}
+
+        <a href="/student_dashboard" class="btn btn-outline-light btn-sm me-2">Profile</a>
+        <a href="/notifications" class="btn btn-outline-warning btn-sm me-2">🔔</a>
+        <a href="/logout" class="btn btn-danger btn-sm">Logout</a>
+    </div>
+
+</nav>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, msg in messages %}
+      <div class="alert alert-{{ category }} mt-2 text-center">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="container mt-5">
+    <h2 class="text-center">Student Dashboard</h2>
+
+    <div class="box text-center">
         <p>Welcome, Student!</p>
         <p>You can view and apply for jobs.</p>
     </div>
 
-    <a href="/logout" class="btn btn-danger mt-3">Logout</a>
+<h4 class="mt-4">Update Profile</h4>
+
+<form action="/update_student_profile" method="POST">
+    <input type="text" name="department" placeholder="Department" class="form-control mb-2">
+
+    <input type="text" name="cgpa" placeholder="CGPA" class="form-control mb-2">
+
+    <input type="text" name="resume" placeholder="Resume Link" class="form-control mb-2">
+
+    <button class="btn btn-success">Save Profile</button>
+</form>
+
+{% if applications %}
+<p class="mt-2 text-light">Profile updated successfully</p>
+{% endif %}
+
+<h4 class="mt-4">Available Jobs</h4>
+
+{% if jobs %}
+    {% for job in jobs %}
+        <div class="mb-3 p-3 bg-white text-dark rounded">
+            <strong>{{ job.title }}</strong><br>
+            Skills: {{ job.skills }}<br>
+            Salary: {{ job.salary }}<br>
+
+            {% set applied = false %}
+            {% for app in applications %}
+                {% if app.job_id == job.id %}
+                    {% set applied = true %}
+                {% endif %}
+            {% endfor %}
+
+            {% if not applied %}
+                <form action="/apply/{{ job.id }}" method="POST">
+                    <button class="btn btn-primary btn-sm mt-2">Apply</button>
+                </form>
+            {% else %}
+                <button class="btn btn-secondary btn-sm mt-2" disabled>Applied</button>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    <p class="text-light">No jobs available</p>
+{% endif %}
+
+<h4 class="mt-4">My Applications</h4>
+
+{% if applications %}
+    {% for app in applications %}
+        <div class="mb-3 p-3 bg-light text-dark rounded">
+            <strong>{{ app.job.title }}</strong><br>
+            Status: {{ app.status }}
+        </div>
+    {% endfor %}
+{% else %}
+    <p class="text-light">No applications yet</p>
+{% endif %}
+
 </div>
+
+<footer class="bg-dark text-white text-center py-2 mt-4">
+    <small>© 2026 Placement Portal | Developed by Shreekant</small>
+</footer>
 
 </body>
 </html>
